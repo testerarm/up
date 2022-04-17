@@ -146,9 +146,11 @@ if __name__ == '__main__':
 		start = timer()
 
 		max_concurrency = 4
-
-
 		#need images
+  
+	    ### 
+        ###   raise IOError(reconstruction_json + " does not exist.")
+
 
 		# delete from makescene
 		lib.mve_makescene_function(current_path, max_concurrency)
@@ -191,20 +193,42 @@ if __name__ == '__main__':
 
 		start = timer()
 
+		from opendm import system 
+		system.mkdir_p(os.path.join(submodel_path, 'opensfm'))
+		# Create reconstruction object
+		reconstruction = types.ODM_Reconstruction(photos)
+		opensfm_interface.invent_reference_lla(images_filepath,  photo_list,os.path.join(submodel_path, 'opensfm'))
+		
+		system.mkdir_p(os.path.join(submodel_path,'odm_georeferencing'))
+		odm_georeferencing = io.join_paths(submodel_path, 'odm_georeferencing')
+		odm_georeferencing_coords = io.join_paths(odm_georeferencing, 'coords.txt')
+		
+		reconstruction.georeference_with_gps(photos, odm_georeferencing_coords, True)
+		odm_geo_proj = io.join_paths(odm_georeferencing, 'proj.txt')
+		reconstruction.save_proj_srs(odm_geo_proj) 
+		from opendm.osfm import OSFMContext 
+		octx = OSFMContext(os.path.join(submodel_path, 'opensfm'))
+		print('----------Export geocroods--------')
+		octx.run('export_geocoords --transformation --proj \'%s\'' % reconstruction.georef.proj4())
+		print('----------Export Geocoords Ppppp--------')
 
-		lib.odm_mesh_function(current_path, max_concurrency)
 
-		end = timer()
-		odm_mesh_time = end - start
+	
+        lib.odm_mesh_function(opensfm_config,submodel_path, max_concurrency, reconstruction)
+
+        #lib.odm_mesh_function(submodel_path, max_concurrency)
+
+        end = timer()
+        odm_mesh_time = end - start
+
+        start = timer()
 
 
-		start = timer()
+        lib.odm_texturing_function(submodel_path)
 
+        end = timer()
+        odm_texturing_time = end - start
 
-		lib.odm_texturing_function(current_path)
-
-		end = timer()
-		odm_texturing_time = end - start
 	except Exception as e:
         	# print(e.message)
         	print(traceback.print_exc())
