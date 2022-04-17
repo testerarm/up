@@ -137,17 +137,74 @@ if __name__ == '__main__':
 
 		start = timer()
 
-		lib.sfm_compute_depthmaps(current_path, opensfm_config)
+		#lib.sfm_compute_depthmaps(current_path, opensfm_config)
 
 		end = timer()
 		sfm_compute_depthmaps_time = end - start
+		
+  
+    	start = timer()
+
+        max_concurrency = 4
+
+
+        #need images
+
+        # delete from makescene
+        lib.mve_makescene_function(current_path, max_concurrency)
 
 
 
+        end = timer()
+        mve_makescene_function_time = end - start
 
-		start = timer()
+        start = timer()
 
-		max_concurrency = 4
+        lib.mve_dense_reconstruction(current_path ,max_concurrency)
+
+        end = timer()
+        mve_dense_reconstruction_time = end - start
+
+        start = timer()
+
+        lib.mve_scene2pset_function(current_path, max_concurrency)
+
+        end = timer()
+        mve_mve_scene2pset_time = end - start
+
+        start = timer()
+
+        lib.mve_cleanmesh_function(current_path, max_concurrency)
+
+        end = timer()
+        mve_mve_cleanmesh_time = end - start
+
+
+        start = timer()
+
+
+        lib.odm_filterpoints_function(current_path, max_concurrency)
+
+
+        end = timer()
+        odm_filterpoint_time = end - start
+        
+        start = timer()
+
+
+        lib.odm_mesh_function(current_path, max_concurrency)
+
+        end = timer()
+        odm_mesh_time = end - start
+
+
+        start = timer()
+
+
+        lib.odm_texturing_function(current_path)
+
+        end = timer()
+        odm_texturing_time = end - start
 	except Exception as e:
         	print(e.message)
         	print(traceback.print_exc())
