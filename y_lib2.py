@@ -1,3 +1,4 @@
+import lib
 import os
 import io 
 import time 
@@ -205,7 +206,7 @@ if __name__ == '__main__':
 		end = timer()
 		odm_texturing_time = end - start
 	except Exception as e:
-        	print(e.message)
+        	# print(e.message)
         	print(traceback.print_exc())
 	except KeyboardInterrupt:
         	print('keyboard interrupt')
