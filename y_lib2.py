@@ -192,42 +192,70 @@ if __name__ == '__main__':
 		odm_filterpoint_time = end - start
 
 		start = timer()
+  
+        from opendm import io
+        images_database_file = io.join_paths(current_path, 'images.json')
+        photo_list = node_cluster_list[current_node_submodel_key]
+        
+        photos = []
+        if not io.file_exists(images_database_file):
+            files = photo_list
+	        images_dir = io.join_paths(file_path,'images')
+            if len(files)>0:
+                # create ODMPhoto list
+                path_files = [io.join_paths(images_dir, f) for f in files]
+
+                
+		        dataset_list = io.join_paths(file_path,'img_list')
+                with open(dataset_list, 'w') as dataset_list:
+                    log.ODM_INFO("Loading %s images" % len(path_files))
+                    for f in path_files:
+                        photos += [types.ODM_Photo(f)]
+                        dataset_list.write(photos[-1].filename + '\n')
+
+                # Save image database for faster restart
+                lib.save_images_database(photos, images_database_file)
+            else:
+                log.ODM_ERROR('Not enough supported images in %s' % images_dir)
+                exit(1)
+        else:
+            # We have an images database, just load it
+            photos = lib.load_images_database(images_database_file)
+
+        log.ODM_INFO('Found %s usable images' % len(photos))
 
 		from opendm import system 
-		system.mkdir_p(os.path.join(submodel_path, 'opensfm'))
+		system.mkdir_p(os.path.join(current_path, 'opensfm'))
 		# Create reconstruction object
 		reconstruction = types.ODM_Reconstruction(photos)
-		opensfm_interface.invent_reference_lla(images_filepath,  photo_list,os.path.join(submodel_path, 'opensfm'))
+		opensfm_interface.invent_reference_lla(images_filepath,  photo_list,os.path.join(current_path, 'opensfm'))
 		
-		system.mkdir_p(os.path.join(submodel_path,'odm_georeferencing'))
-		odm_georeferencing = io.join_paths(submodel_path, 'odm_georeferencing')
+		system.mkdir_p(os.path.join(current_path,'odm_georeferencing'))
+		odm_georeferencing = io.join_paths(current_path, 'odm_georeferencing')
 		odm_georeferencing_coords = io.join_paths(odm_georeferencing, 'coords.txt')
 		
 		reconstruction.georeference_with_gps(photos, odm_georeferencing_coords, True)
 		odm_geo_proj = io.join_paths(odm_georeferencing, 'proj.txt')
 		reconstruction.save_proj_srs(odm_geo_proj) 
 		from opendm.osfm import OSFMContext 
-		octx = OSFMContext(os.path.join(submodel_path, 'opensfm'))
+		octx = OSFMContext(os.path.join(current_path, 'opensfm'))
 		print('----------Export geocroods--------')
 		octx.run('export_geocoords --transformation --proj \'%s\'' % reconstruction.georef.proj4())
 		print('----------Export Geocoords Ppppp--------')
+		lib.odm_mesh_function(opensfm_config,current_path, max_concurrency, reconstruction)
+
+		#lib.odm_mesh_function(current_path, max_concurrency)
+
+		end = timer()
+		odm_mesh_time = end - start
+
+		start = timer()
 
 
-	
-        lib.odm_mesh_function(opensfm_config,submodel_path, max_concurrency, reconstruction)
+		lib.odm_texturing_function(current_path)
 
-        #lib.odm_mesh_function(submodel_path, max_concurrency)
-
-        end = timer()
-        odm_mesh_time = end - start
-
-        start = timer()
-
-
-        lib.odm_texturing_function(submodel_path)
-
-        end = timer()
-        odm_texturing_time = end - start
+		end = timer()
+		odm_texturing_time = end - start
 
 	except Exception as e:
         	# print(e.message)
